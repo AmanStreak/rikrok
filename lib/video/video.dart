@@ -40,17 +40,36 @@ class CameraExampleHomeState extends State<CameraExampleHome>
   bool enableAudio = true;
   bool recordingStart = true;
   bool editRecordedVideo = true;
+  List<CameraDescription> cameras;
+  bool appCameraLens = true;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    initializeCamera();
+    initializeCamera().then((_) {
+      initializeBackCamera();
+    });
   }
 
   initializeCamera() async {
-    List<CameraDescription> cameras = await availableCameras();
+    cameras = await availableCameras();
+    return cameras;
+  }
+
+  initializeFrontCamera() {
+    print('FrontCamera');
+    controller = CameraController(cameras[1], ResolutionPreset.medium);
+    initializingCameraController();
+  }
+
+  initializeBackCamera() {
+    print('BackCamera');
     controller = CameraController(cameras[0], ResolutionPreset.medium);
+    initializingCameraController();
+  }
+
+  initializingCameraController() {
     controller.initialize().then((_) {
       if (!mounted) {
         return;
@@ -146,7 +165,7 @@ class CameraExampleHomeState extends State<CameraExampleHome>
   Widget cameraPreviewWidget() {
     if (controller == null || !controller.value.isInitialized) {
       return const Text(
-        'Tap a camera',
+        'Camera Not Working',
         style: TextStyle(
           color: Colors.white,
           fontSize: 24.0,
@@ -364,6 +383,34 @@ class CameraExampleHomeState extends State<CameraExampleHome>
             ),
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.all(5.0),
+          child: Container(
+            padding: EdgeInsets.all(7.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: Icon(
+                Icons.switch_camera,
+                size: 30.0,
+                color: Colors.deepPurple,
+              ),
+              onPressed: () {
+                setState(() {
+                  appCameraLens = !appCameraLens;
+                  print(appCameraLens);
+                });
+                if (appCameraLens) {
+                  initializeBackCamera();
+                } else {
+                  initializeFrontCamera();
+                }
+              },
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -430,18 +477,18 @@ class CameraExampleHomeState extends State<CameraExampleHome>
     }
   }
 
-  void onTakePictureButtonPressed() {
-    takePicture().then((String filePath) {
-      if (mounted) {
-        setState(() {
-          imagePath = filePath;
-          videoController?.dispose();
-          videoController = null;
-        });
-        if (filePath != null) showInSnackBar('Picture saved to $filePath');
-      }
-    });
-  }
+//  void onTakePictureButtonPressed() {
+//    takePicture().then((String filePath) {
+//      if (mounted) {
+//        setState(() {
+//          imagePath = filePath;
+//          videoController?.dispose();
+//          videoController = null;
+//        });
+//        if (filePath != null) showInSnackBar('Picture saved to $filePath');
+//      }
+//    });
+//  }
 
   void onVideoRecordButtonPressed() {
     startVideoRecording().then((String filePath) {
@@ -544,52 +591,52 @@ class CameraExampleHomeState extends State<CameraExampleHome>
     }
   }
 
-  Future<void> _startVideoPlayer() async {
-    final VideoPlayerController vcontroller =
-        VideoPlayerController.file(File(videoPath));
-    videoPlayerListener = () {
-      if (videoController != null && videoController.value.size != null) {
-        // Refreshing the state to update video player with the correct ratio.
-        if (mounted) setState(() {});
-        videoController.removeListener(videoPlayerListener);
-      }
-    };
-    vcontroller.addListener(videoPlayerListener);
-    await vcontroller.setLooping(true);
-    await vcontroller.initialize();
-    await videoController?.dispose();
-    if (mounted) {
-      setState(() {
-        imagePath = null;
-        videoController = vcontroller;
-      });
-    }
-    await vcontroller.play();
-  }
+//  Future<void> _startVideoPlayer() async {
+//    final VideoPlayerController vcontroller =
+//        VideoPlayerController.file(File(videoPath));
+//    videoPlayerListener = () {
+//      if (videoController != null && videoController.value.size != null) {
+//        // Refreshing the state to update video player with the correct ratio.
+//        if (mounted) setState(() {});
+//        videoController.removeListener(videoPlayerListener);
+//      }
+//    };
+//    vcontroller.addListener(videoPlayerListener);
+//    await vcontroller.setLooping(true);
+//    await vcontroller.initialize();
+//    await videoController?.dispose();
+//    if (mounted) {
+//      setState(() {
+//        imagePath = null;
+//        videoController = vcontroller;
+//      });
+//    }
+//    await vcontroller.play();
+//  }
 
-  Future<String> takePicture() async {
-    if (!controller.value.isInitialized) {
-      showInSnackBar('Error: select a camera first.');
-      return null;
-    }
-    final Directory extDir = await getExternalStorageDirectory();
-    final String dirPath = '${extDir.path}/Pictures/flutter_test';
-    await Directory(dirPath).create(recursive: true);
-    final String filePath = '$dirPath/${timestamp()}.jpg';
-
-    if (controller.value.isTakingPicture) {
-      // A capture is already pending, do nothing.
-      return null;
-    }
-
-    try {
-      await controller.takePicture(filePath);
-    } on CameraException catch (e) {
-      _showCameraException(e);
-      return null;
-    }
-    return filePath;
-  }
+//  Future<String> takePicture() async {
+//    if (!controller.value.isInitialized) {
+//      showInSnackBar('Error: select a camera first.');
+//      return null;
+//    }
+//    final Directory extDir = await getExternalStorageDirectory();
+//    final String dirPath = '${extDir.path}/Pictures/flutter_test';
+//    await Directory(dirPath).create(recursive: true);
+//    final String filePath = '$dirPath/${timestamp()}.jpg';
+//
+//    if (controller.value.isTakingPicture) {
+//      // A capture is already pending, do nothing.
+//      return null;
+//    }
+//
+//    try {
+//      await controller.takePicture(filePath);
+//    } on CameraException catch (e) {
+//      _showCameraException(e);
+//      return null;
+//    }
+//    return filePath;
+//  }
 
   void _showCameraException(CameraException e) {
     logError(e.code, e.description);
@@ -597,24 +644,24 @@ class CameraExampleHomeState extends State<CameraExampleHome>
   }
 }
 
-class CameraApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: CameraExampleHome(),
-    );
-  }
-}
-
-List<CameraDescription> cameras = [];
-
-Future<void> main() async {
-  // Fetch the available cameras before initializing the app.
-  try {
-    WidgetsFlutterBinding.ensureInitialized();
-    cameras = await availableCameras();
-  } on CameraException catch (e) {
-    logError(e.code, e.description);
-  }
-  runApp(CameraApp());
-}
+//class CameraApp extends StatelessWidget {
+//  @override
+//  Widget build(BuildContext context) {
+//    return MaterialApp(
+//      home: CameraExampleHome(),
+//    );
+//  }
+//}
+//
+//List<CameraDescription> cameras = [];
+//
+//Future<void> main() async {
+//  // Fetch the available cameras before initializing the app.
+//  try {
+//    WidgetsFlutterBinding.ensureInitialized();
+//    cameras = await availableCameras();
+//  } on CameraException catch (e) {
+//    logError(e.code, e.description);
+//  }
+//  runApp(CameraApp());
+//}

@@ -9,7 +9,7 @@ class _VideoMetaDateState extends State<VideoMetaData> {
   TextEditingController descriptionController = TextEditingController();
   TextEditingController tagsController = TextEditingController();
   String videoDescription, videoTags;
-
+  DateTime uploadDateTime;
   final formkey = GlobalKey<FormState>();
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -17,6 +17,8 @@ class _VideoMetaDateState extends State<VideoMetaData> {
     if (selectedLanguages.containsValue(true)) {
       if (formkey.currentState.validate()) {
         formkey.currentState.save();
+        uploadDateTime = DateTime.now();
+        print('$uploadDateTime');
         print('Tags $videoTags desc $videoDescription');
       } else {
         print('value can\'t be saved');
